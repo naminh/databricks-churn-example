@@ -1,0 +1,14 @@
+{
+    "environments": {
+        "nonprod": {
+            "profile": "nonprod",
+            "workspace_dir": "nonprod/dbx",
+            "artifact_location": "dbfs:/nonprod/dbx"
+        },
+        "prod": {
+            "profile": "prod",
+            "workspace_dir": "prod/dbx",
+            "artifact_location": "dbfs:/prod/dbx"
+        }
+    }
+}

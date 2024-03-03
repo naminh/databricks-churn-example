@@ -1,0 +1,69 @@
+custom:
+
+  basic-cluster-props-nonprod: &basic-cluster-props-nonprod
+    spark_version: '11.1.x-cpu-ml-scala2.12'
+    node_type_id: 'm5d.xlarge'
+    driver_node_type_id: 'm5d.xlarge'
+    aws_attributes:
+      first_on_demand: 1
+      availability: 'SPOT_WITH_FALLBACK'
+      spot_bid_price_percent: 100
+      zone_id: 'auto'
+      ebs_volume_count: 1
+      ebs_volume_size: 32
+    # To reduce start up time for each job, it is advisable to use a cluster pool. To do so involves supplying the following
+    # two fields with a pool_id to acquire both the driver and instances from.
+    # If driver_instance_pool_id and instance_pool_id are set, both node_type_id and driver_node_type_id CANNOT be supplied.
+    # As such, if providing a pool_id for driver and worker instances, please ensure that node_type_id and driver_node_type_id are not present
+    spark_env_vars:
+      http_proxy:
+      https_proxy:
+      no_proxy: '.cloud.databricks.com'
+
+  basic-cluster-props-prod: &basic-cluster-props-prod
+    spark_version: '11.1.x-cpu-ml-scala2.12'
+    node_type_id: 'm5d.xlarge'
+    driver_node_type_id: 'm5d.xlarge'
+    aws_attributes:
+      first_on_demand: 1
+      availability: 'SPOT_WITH_FALLBACK'
+      spot_bid_price_percent: 100
+      zone_id: 'auto'
+      ebs_volume_count: 1
+      ebs_volume_size: 32
+    spark_env_vars:
+      http_proxy:
+      https_proxy:
+      no_proxy: '.cloud.databricks.com'
+
+  basic-static-cluster-nonprod: &basic-static-cluster-nonprod
+    new_cluster:
+      <<: *basic-cluster-props-nonprod
+      num_workers: 1
+  basic-static-cluster-prod: &basic-static-cluster-prod
+    new_cluster:
+      <<: *basic-cluster-props-prod
+      num_workers: 1
+
+environments:
+
+  nonprod:
+    strict_path_adjustment_policy: true
+    jobs:
+      - name: 'model-train'
+        <<: *basic-static-cluster-nonprod
+        spark_python_task:
+          python_file: 'file://churn/pipelines/model_train_job.py'
+          parameters: ['--env', 'file:fuse://conf/env_vars/.nonprod.env',
+                       '--conf-file', 'file:fuse://conf/pipeline_configs/model_train.yml']
+        max_retries: 0
+      - name: 'integration-test'
+        <<: *basic-static-cluster-nonprod
+        spark_python_task:
+          python_file: 'file://tests/integration/sample_test.py'
+          parameters: ['--env', 'file:fuse://conf/env_vars/.nonprod.env',
+                       '--conf-file', 'file:fuse://conf/pipeline_configs/sample_integration_test.yml']
+
+  prod:
+    strict_path_adjustment_policy: true
+    jobs:
